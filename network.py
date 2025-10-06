@@ -75,6 +75,10 @@ inputs = torch.cat([treatment_inputs, category_inputs, standardized_inputs],1).t
 targets = torch.tensor(df['choice2'].to_numpy(),dtype=torch.float).to(device)
 data = (inputs, targets)
 
+choice1 = df['choice1'].to_numpy()
+choice2 = df['choice2'].to_numpy()
+happen1 = df['happen1'].to_numpy()
+
 n1 = 5 # number of neurons in first hidden layer
 n2 = 5 # number of neurons in second hidden layer
 
@@ -176,6 +180,32 @@ def predict(data, nsteps):
 # test_losses_df = pd.DataFrame({'test_losses': test_losses})
 # test_losses_df.to_csv("test_losses.csv", index=False)
 
+os.system('clear')
+
+def estimateEffect(data, shuffled_happen1):
+	inputs, targets = data
+	inputs = inputs.clone()
+	targets = targets.clone()
+	data = (inputs, targets)
+	inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
+	predictions = predict(data, nsteps=345)
+	T0 = (shuffled_happen1 == 0) & (choice1 == 1)
+	T1 = (shuffled_happen1 == 1) & (choice1 == 1)
+	T = T0 | T1
+	A0 = np.mean(choice2[T0]-predictions[T0,0])
+	A1 = np.mean(choice2[T1]-predictions[T1,1])
+	B0 = np.mean(predictions[T,0])
+	B1 = np.mean(predictions[T,1])
+	mu_hat = [A0 + B0, A1 + B1]
+	return mu_hat[1] - mu_hat[0]
+
+shuffled_happen1 = np.random.permutation(happen1)
+estimateEffect(data, shuffled_happen1)
+
+# Conduct a permutation test:
+# Estimatet the effect for a shuffled treatment 10,000 times
+# For a p-value: percentile of estimated effect with real treatment
+
 predictions = predict(data, nsteps=345)
 print(predictions)
 predicted_intercept = predictions[:,0]
@@ -186,9 +216,6 @@ hist = plt.hist(predicted_treatment_effect, bins=20)
 predict_ate = np.mean(predicted_treatment_effect)
 print(f"Predicted ATE: {predict_ate}")
 
-choice1 = df['choice1'].to_numpy()
-choice2 = df['choice2'].to_numpy()
-happen1 = df['happen1'].to_numpy()
 ml_data = pd.DataFrame({
 	'choice1': choice1,
 	'choice2': choice2,
@@ -197,8 +224,6 @@ ml_data = pd.DataFrame({
 	'ML1': predicted_treatment_effect
 })
 ml_data.to_csv("ml_data.csv", index=False)
-
-os.system('clear')
 
 T0 = (happen1 == 0) & (choice1 == 1)
 T1 = (happen1 == 1) & (choice1 == 1)
@@ -214,10 +239,10 @@ A1
 B0
 B1
 mu_hat
+mu_hat[1] - mu_hat[0]
 
 np.mean(choice2[T0])
-np.mean(predictions[T0,0])
 np.mean(choice2[T1])
-np.mean(predictions[T1,1])
+
 tval, pval = stats.ttest_ind(choice2[T0],choice2[T1])
 '{:f}'.format(pval)
