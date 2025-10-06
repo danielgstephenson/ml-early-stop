@@ -4,6 +4,8 @@ import numpy as np
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import matplotlib.pyplot as plt
+import os
+from scipy import stats
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device = " + str(device))
@@ -195,3 +197,27 @@ ml_data = pd.DataFrame({
 	'ML1': predicted_treatment_effect
 })
 ml_data.to_csv("ml_data.csv", index=False)
+
+os.system('clear')
+
+T0 = (happen1 == 0) & (choice1 == 1)
+T1 = (happen1 == 1) & (choice1 == 1)
+T = T0 | T1
+A0 = np.mean(choice2[T0]-predictions[T0,0])
+A1 = np.mean(choice2[T1]-predictions[T1,1])
+B0 = np.mean(predictions[T,0])
+B1 = np.mean(predictions[T,1])
+mu_hat = [A0 + B0, A1 + B1]
+
+A0
+A1
+B0
+B1
+mu_hat
+
+np.mean(choice2[T0])
+np.mean(predictions[T0,0])
+np.mean(choice2[T1])
+np.mean(predictions[T1,1])
+tval, pval = stats.ttest_ind(choice2[T0],choice2[T1])
+'{:f}'.format(pval)
