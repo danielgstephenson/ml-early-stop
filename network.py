@@ -3,7 +3,6 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-import math
 import matplotlib.pyplot as plt
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -149,7 +148,7 @@ def cross_validate(data, ntrials=1000, nsteps=1000):
 	print(f"stop_step: {stop_step}")
 	return mean_losses
 	
-def predict(data, nsteps=100):
+def predict(data, nsteps):
 	nobs = data[0].size()[0]
 	predictions = np.zeros((nobs, 2))
 	for ob in range(nobs):
@@ -175,7 +174,7 @@ def predict(data, nsteps=100):
 # test_losses_df = pd.DataFrame({'test_losses': test_losses})
 # test_losses_df.to_csv("test_losses.csv", index=False)
 
-predictions = predict(data, nsteps=300)
+predictions = predict(data, nsteps=345)
 print(predictions)
 predicted_intercept = predictions[:,0]
 predicted_treatment_effect = predictions[:,1] - predictions[:,0]
@@ -196,4 +195,3 @@ ml_data = pd.DataFrame({
 	'ML1': predicted_treatment_effect
 })
 ml_data.to_csv("ml_data.csv", index=False)
-
