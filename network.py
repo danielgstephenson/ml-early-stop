@@ -203,7 +203,9 @@ shuffled_happen1 = np.random.permutation(happen1)
 estimateEffect(data, shuffled_happen1)
 
 # Conduct a permutation test:
-# Estimatet the effect for a shuffled treatment 10,000 times
+# Limit the shuffling to where choice1 = 1
+#    i.e. never assign happen1 = 1 where choice1 = 0
+# Estimate the effect for a shuffled treatment 10,000 times
 # For a p-value: percentile of estimated effect with real treatment
 
 predictions = predict(data, nsteps=345)
