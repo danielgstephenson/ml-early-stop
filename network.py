@@ -182,7 +182,7 @@ def predict(data, nsteps):
 
 os.system('clear')
 
-def estimateEffect(data, shuffled_happen1):
+def estimate_effect(data, shuffled_happen1):
 	inputs, targets = data
 	inputs = inputs.clone()
 	targets = targets.clone()
@@ -199,7 +199,19 @@ def estimateEffect(data, shuffled_happen1):
 	mu_hat = [A0 + B0, A1 + B1]
 	return mu_hat[1] - mu_hat[0]
 
-shuffled_happen1 = np.random.permutation(happen1)
+def shuffle_happen(data):
+	inputs, targets = data
+	inputs = inputs.clone()
+	targets = targets.clone()
+	C11 = choice1 == 1
+	shuffled_happen1 = happen1.copy()
+	shuffled_happen1[C11] = np.random.permutation(happen1[C11])
+	inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
+	data = (inputs, targets)
+	return data
+
+shuffledData = shuffle_happen(data)
+
 # estimateEffect(data, shuffled_happen1)
 
 # Conduct a permutation test:
