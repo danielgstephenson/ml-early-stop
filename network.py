@@ -182,15 +182,14 @@ def predict(data, nsteps):
 
 os.system('clear')
 
-def estimate_effect(data, shuffled_happen1):
+def estimate_effect(data):
 	inputs, targets = data
 	inputs = inputs.clone()
 	targets = targets.clone()
 	data = (inputs, targets)
-	inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
 	predictions = predict(data, nsteps=345)
-	T0 = (shuffled_happen1 == 0) & (choice1 == 1)
-	T1 = (shuffled_happen1 == 1) & (choice1 == 1)
+	T0 = (happen1 == 0) & (choice1 == 1)
+	T1 = (happen1 == 1) & (choice1 == 1)
 	T = T0 | T1
 	A0 = np.mean(choice2[T0]-predictions[T0,0]) # debiasing term
 	A1 = np.mean(choice2[T1]-predictions[T1,1]) # debiasing term
@@ -210,47 +209,26 @@ def shuffle_happen(data):
 	return data
 
 # Verify that the shuffling is done correctly
-shuffledData = shuffle_happen(data)
+# Limit the shuffling to where choice1 = 1
+#    i.e. never assign happen1 = 1 where choice1 = 0
+shuffled_data = shuffle_happen(data)
 C11 = choice1 == 1
 C10 = choice1 == 0
-data[0][:,0] - shuffledData[0][:,0]
-data[0][C11,0] - shuffledData[0][C11,0]
-data[0][C10,0] - shuffledData[0][C10,0]
+data[0][:,0] - shuffled_data[0][:,0]
+data[0][C11,0] - shuffled_data[0][C11,0]
+data[0][C10,0] - shuffled_data[0][C10,0]
 
 # estimateEffect(data, shuffled_happen1)
 
 # Conduct a permutation test:
-# Limit the shuffling to where choice1 = 1
-#    i.e. never assign happen1 = 1 where choice1 = 0
 # Estimate the effect for a shuffled treatment 10,000 times
 # For a p-value: percentile of estimated effect with real treatment
 
-predictions = predict(data, nsteps=345)
-predicted_intercept = predictions[:,0]
-predicted_treatment_effect = predictions[:,1] - predictions[:,0]
-plt.clf()
-plt.ion()
-hist = plt.hist(predicted_treatment_effect, bins=20)
-predict_ate = np.mean(predicted_treatment_effect)
-print(f"Predicted ATE: {predict_ate}")
-
-ml_data = pd.DataFrame({
-	'choice1': choice1,
-	'choice2': choice2,
-	'happen1': happen1,
-	'ML0': predicted_intercept,
-	'ML1': predicted_treatment_effect
-})
-ml_data.to_csv("ml_data.csv", index=False)
-
-T0 = (happen1 == 0) & (choice1 == 1)
-T1 = (happen1 == 1) & (choice1 == 1)
-T = T0 | T1
-A0 = np.mean(choice2[T0]-predictions[T0,0])
-A1 = np.mean(choice2[T1]-predictions[T1,1])
-B0 = np.mean(predictions[T,0])
-B1 = np.mean(predictions[T,1])
-mu_hat = [A0 + B0, A1 + B1]
+effect_estimate = estimate_effect(data)
+print(f"Predicted Effect: {effect_estimate}")
+shuffled_data = shuffle_happen(data)
+shuffled_effect_estimate = estimate_effect(shuffled_data)
+print(f"Shuffled Effect: {shuffled_effect_estimate}")
 
 
 
