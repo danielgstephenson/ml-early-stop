@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import os
-from scipy import stats
+from sklearn import linear_model
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device = " + str(device))
@@ -153,7 +153,11 @@ def cross_validate(data, ntrials=1000, nsteps=1000):
 	stop_step = np.argmin(mean_losses)
 	print(f"stop_step: {stop_step}")
 	return mean_losses
-	
+
+# test_losses = cross_validate(data, ntrials=1000, nsteps=600)
+# test_losses_df = pd.DataFrame({'test_losses': test_losses})
+# test_losses_df.to_csv("test_losses.csv", index=False)
+
 def predict(data, nsteps):
 	nobs = data[0].size()[0]
 	predictions = np.zeros((nobs, 2))
@@ -162,7 +166,7 @@ def predict(data, nsteps):
 		train_data, test_data = leave_one_out(data, ob)
 		model = Multilayer_Perceptron().to(device)
 		optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-		for step in range(nsteps):
+		for _ in range(nsteps):
 			train_step(model, train_data, optimizer)
 		input0 = test_data[0].clone()
 		input1 = test_data[0].clone()
@@ -176,34 +180,26 @@ def predict(data, nsteps):
 		predictions[ob, 1] = output1.item()
 	return predictions
 
-# test_losses = cross_validate(data, ntrials=1000, nsteps=600)
-# test_losses_df = pd.DataFrame({'test_losses': test_losses})
-# test_losses_df.to_csv("test_losses.csv", index=False)
-
 os.system('clear')
 
-def estimate_effect(data):
+def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
 	inputs, targets = data
-	inputs = inputs.clone()
-	targets = targets.clone()
-	data = (inputs, targets)
-	predictions = predict(data, nsteps=345)
-	T0 = (happen1 == 0) & (choice1 == 1)
-	T1 = (happen1 == 1) & (choice1 == 1)
-	T = T0 | T1
+	predictions = predict(data, nsteps=345) # 345
+	treatment = inputs[:,0].cpu().numpy()
+	T0 = (treatment == 0) & (choice1 == 1)
+	T1 = (treatment == 1) & (choice1 == 1)
+	C11 = T0 | T1
 	A0 = np.mean(choice2[T0]-predictions[T0,0]) # debiasing term
 	A1 = np.mean(choice2[T1]-predictions[T1,1]) # debiasing term
-	B0 = np.mean(predictions[T,0]) 
-	B1 = np.mean(predictions[T,1])
+	B0 = np.mean(predictions[C11,0]) 
+	B1 = np.mean(predictions[C11,1])
 	mu_hat = [A0 + B0, A1 + B1]
 	return mu_hat[1] - mu_hat[0]
 
 def shuffle_happen(data):
 	inputs, targets = data
 	shuffled_inputs = inputs.clone()
-	C11 = choice1 == 1
-	shuffled_happen1 = happen1.copy()
-	shuffled_happen1[C11] = np.random.permutation(happen1[C11])
+	shuffled_happen1 = np.random.permutation(happen1)
 	shuffled_inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
 	data = (shuffled_inputs, targets)
 	return data
@@ -218,17 +214,26 @@ data[0][:,0] - shuffled_data[0][:,0]
 data[0][C11,0] - shuffled_data[0][C11,0]
 data[0][C10,0] - shuffled_data[0][C10,0]
 
-# estimateEffect(data, shuffled_happen1)
-
 # Conduct a permutation test:
 # Estimate the effect for a shuffled treatment 10,000 times
 # For a p-value: percentile of estimated effect with real treatment
+# NEXT: Create code to estimate the distribution of shuffled estimates.
 
 effect_estimate = estimate_effect(data)
-print(f"Predicted Effect: {effect_estimate}")
 shuffled_data = shuffle_happen(data)
 shuffled_effect_estimate = estimate_effect(shuffled_data)
+print(f"Predicted Effect: {effect_estimate}")
 print(f"Shuffled Effect: {shuffled_effect_estimate}")
 
+x = data[0].cpu().numpy()
+y = data[1].cpu().numpy()
+reg = linear_model.LinearRegression()
+reg.fit(x,y)
+reg.coef_
 
-
+shuffled_data = shuffle_happen(data)
+sx = shuffled_data[0].cpu().numpy()
+sy = data[1].cpu().numpy()
+sreg = linear_model.LinearRegression()
+sreg.fit(sx,sy)
+sreg.coef_
