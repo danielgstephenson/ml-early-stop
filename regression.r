@@ -60,3 +60,8 @@ summary(lm(choice2~
              as.factor(cognition1) +
              as.factor(cognition2),
            data=cleanData))
+
+group0 = cleanData$happen1==0&cleanData$choice1==1
+group1 = cleanData$happen1==1&cleanData$choice1==1
+t.test(cleanData$choice2[group0],cleanData$choice2[group1])
+

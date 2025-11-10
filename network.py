@@ -192,15 +192,15 @@ def estimateEffect(data, shuffled_happen1):
 	T0 = (shuffled_happen1 == 0) & (choice1 == 1)
 	T1 = (shuffled_happen1 == 1) & (choice1 == 1)
 	T = T0 | T1
-	A0 = np.mean(choice2[T0]-predictions[T0,0])
-	A1 = np.mean(choice2[T1]-predictions[T1,1])
-	B0 = np.mean(predictions[T,0])
+	A0 = np.mean(choice2[T0]-predictions[T0,0]) # debiasing term
+	A1 = np.mean(choice2[T1]-predictions[T1,1]) # debiasing term
+	B0 = np.mean(predictions[T,0]) 
 	B1 = np.mean(predictions[T,1])
 	mu_hat = [A0 + B0, A1 + B1]
 	return mu_hat[1] - mu_hat[0]
 
 shuffled_happen1 = np.random.permutation(happen1)
-estimateEffect(data, shuffled_happen1)
+# estimateEffect(data, shuffled_happen1)
 
 # Conduct a permutation test:
 # Limit the shuffling to where choice1 = 1
@@ -209,7 +209,6 @@ estimateEffect(data, shuffled_happen1)
 # For a p-value: percentile of estimated effect with real treatment
 
 predictions = predict(data, nsteps=345)
-print(predictions)
 predicted_intercept = predictions[:,0]
 predicted_treatment_effect = predictions[:,1] - predictions[:,0]
 plt.clf()
@@ -236,15 +235,5 @@ B0 = np.mean(predictions[T,0])
 B1 = np.mean(predictions[T,1])
 mu_hat = [A0 + B0, A1 + B1]
 
-A0
-A1
-B0
-B1
-mu_hat
-mu_hat[1] - mu_hat[0]
 
-np.mean(choice2[T0])
-np.mean(choice2[T1])
 
-tval, pval = stats.ttest_ind(choice2[T0],choice2[T1])
-'{:f}'.format(pval)
