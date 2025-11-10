@@ -201,16 +201,21 @@ def estimate_effect(data, shuffled_happen1):
 
 def shuffle_happen(data):
 	inputs, targets = data
-	inputs = inputs.clone()
-	targets = targets.clone()
+	shuffled_inputs = inputs.clone()
 	C11 = choice1 == 1
 	shuffled_happen1 = happen1.copy()
 	shuffled_happen1[C11] = np.random.permutation(happen1[C11])
-	inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
-	data = (inputs, targets)
+	shuffled_inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
+	data = (shuffled_inputs, targets)
 	return data
 
+# Verify that the shuffling is done correctly
 shuffledData = shuffle_happen(data)
+C11 = choice1 == 1
+C10 = choice1 == 0
+data[0][:,0] - shuffledData[0][:,0]
+data[0][C11,0] - shuffledData[0][C11,0]
+data[0][C10,0] - shuffledData[0][C10,0]
 
 # estimateEffect(data, shuffled_happen1)
 
