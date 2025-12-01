@@ -229,7 +229,7 @@ shuffled_data = shuffle_happen(data)
 # For a p-value: percentile of estimated effect with real treatment
 # NEXT: Create code to estimate the distribution of shuffled estimates.
 
-effect_estimate = estimate_effect(data).
+effect_estimate = estimate_effect(data)
 print(f"Predicted Effect: {effect_estimate}")
 permutation_estimates = np.array([effect_estimate])
 for step in range(10000):
