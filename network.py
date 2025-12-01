@@ -236,7 +236,7 @@ for step in range(10000):
 	estimate = estimate_effect(shuffled_data)
 	permutation_estimates[step] = estimate_effect(shuffled_data)
 	print(f"Shuffled Effect {step}: {estimate}")
-np.savetxt('permutation_estimates.csv', 
-		   permutation_estimates, 
-		   delimiter=',',
-		   fmt='%.6f')
+	np.savetxt('permutation_estimates.csv', 
+		permutation_estimates, 
+		delimiter=',',
+		fmt='%.6f')
