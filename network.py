@@ -234,9 +234,17 @@ permutation_estimates = np.array([effect_estimate])
 for step in range(10000):
 	shuffled_data = shuffle_happen(data)
 	estimate = estimate_effect(shuffled_data)
-	permutation_estimates[step+1] = estimate
+	permutation_estimates = np.append(permutation_estimates, estimate)
 	print(f"Shuffled Effect {step+1}: {estimate}")
 	np.savetxt('permutation_estimates.csv', 
 		permutation_estimates, 
 		delimiter=',',
 		fmt='%.6f')
+	
+# Next steps:
+# A) Obtain p-value from permutation test
+# B) Distribution of effect estimates. Take the average 
+# C) Heterogeneity 
+# C1) How much heterogeneity exists?
+# C2) Which variables are correlated with the Treatment effect? 
+#     (e.g. cognition)
