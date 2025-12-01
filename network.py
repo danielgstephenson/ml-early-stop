@@ -234,7 +234,7 @@ permutation_estimates = np.array([effect_estimate])
 for step in range(10000):
 	shuffled_data = shuffle_happen(data)
 	estimate = estimate_effect(shuffled_data)
-	permutation_estimates[step+1] = estimate_effect(shuffled_data)
+	permutation_estimates[step+1] = estimate
 	print(f"Shuffled Effect {step+1}: {estimate}")
 	np.savetxt('permutation_estimates.csv', 
 		permutation_estimates, 
