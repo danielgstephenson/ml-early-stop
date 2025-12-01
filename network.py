@@ -4,7 +4,6 @@ import numpy as np
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import os
-from sklearn import linear_model
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("device = " + str(device))
