@@ -180,7 +180,7 @@ def predict(data, nsteps):
 		predictions[ob, 1] = output1.item()
 	return predictions
 
-os.system('clear')
+# os.system('clear')
 
 def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
 	inputs, targets = data
