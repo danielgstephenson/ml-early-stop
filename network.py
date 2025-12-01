@@ -2,7 +2,6 @@ import pandas as pd
 import torch
 import numpy as np
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import os
 from sklearn import linear_model
@@ -14,6 +13,7 @@ torch.set_printoptions(sci_mode=False, edgeitems=5)
 # torch.cuda.manual_seed_all(0)
 
 df = pd.read_csv("cleanData.csv")
+df = df[df['choice1']==1]
 force_category_columns = [
 	'cognition1',
 	'cognition2'
@@ -196,7 +196,7 @@ def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
 	mu_hat = [A0 + B0, A1 + B1]
 	return mu_hat[1] - mu_hat[0]
 
-def shuffle_happen(data):
+def shuffle_happen(data: torch.Tensor):
 	inputs, targets = data
 	shuffled_inputs = inputs.clone()
 	shuffled_happen1 = np.random.permutation(happen1)
@@ -204,36 +204,40 @@ def shuffle_happen(data):
 	data = (shuffled_inputs, targets)
 	return data
 
-# Verify that the shuffling is done correctly
-# Limit the shuffling to where choice1 = 1
-#    i.e. never assign happen1 = 1 where choice1 = 0
 shuffled_data = shuffle_happen(data)
-C11 = choice1 == 1
-C10 = choice1 == 0
-data[0][:,0] - shuffled_data[0][:,0]
-data[0][C11,0] - shuffled_data[0][C11,0]
-data[0][C10,0] - shuffled_data[0][C10,0]
+# C11 = choice1 == 1
+# C10 = choice1 == 0
+# data[0][:,0] - shuffled_data[0][:,0]
+# data[0][C11,0] - shuffled_data[0][C11,0]
+# data[0][C10,0] - shuffled_data[0][C10,0]
+
+# x = data[0].cpu().numpy()
+# y = data[1].cpu().numpy()
+# reg = linear_model.LinearRegression()
+# reg.fit(x,y)
+# reg.coef_
+
+# shuffled_data = shuffle_happen(data)
+# sx = shuffled_data[0].cpu().numpy()
+# sy = data[1].cpu().numpy()
+# sreg = linear_model.LinearRegression()
+# sreg.fit(sx,sy)
+# sreg.coef_
 
 # Conduct a permutation test:
 # Estimate the effect for a shuffled treatment 10,000 times
 # For a p-value: percentile of estimated effect with real treatment
 # NEXT: Create code to estimate the distribution of shuffled estimates.
 
-effect_estimate = estimate_effect(data)
-shuffled_data = shuffle_happen(data)
-shuffled_effect_estimate = estimate_effect(shuffled_data)
+effect_estimate = estimate_effect(data).
 print(f"Predicted Effect: {effect_estimate}")
-print(f"Shuffled Effect: {shuffled_effect_estimate}")
-
-x = data[0].cpu().numpy()
-y = data[1].cpu().numpy()
-reg = linear_model.LinearRegression()
-reg.fit(x,y)
-reg.coef_
-
-shuffled_data = shuffle_happen(data)
-sx = shuffled_data[0].cpu().numpy()
-sy = data[1].cpu().numpy()
-sreg = linear_model.LinearRegression()
-sreg.fit(sx,sy)
-sreg.coef_
+permutation_estimates = np.array([effect_estimate])
+for step in range(10000):
+	shuffled_data = shuffle_happen(data)
+	estimate = estimate_effect(shuffled_data)
+	permutation_estimates[step] = estimate_effect(shuffled_data)
+	print(f"Shuffled Effect {step}: {estimate}")
+np.savetxt('permutation_estimates.csv', 
+		   permutation_estimates, 
+		   delimiter=',',
+		   fmt='%.6f')
