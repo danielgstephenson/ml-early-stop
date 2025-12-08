@@ -240,29 +240,15 @@ effect_estimate = estimate_effect(data)
 print(f"Predicted Effect: {effect_estimate}")
 permutation_estimates = np.array([effect_estimate])
 for step in range(10000):
-    shuffled_data1 = shuffle_happen(data1)
-    shuffled_input1
-    shuffled_inputs = input0,shuffled_data1[0]
-    shuffled
-    estimate = estimate_effect(shuffled_data)
-    permutation_estimates = np.append(permutation_estimates, estimate)
-    print(f"Shuffled Effect {step+1}: {estimate}")
-    np.savetxt('permutation_estimates.csv', 
-        permutation_estimates, 
-        delimiter=',',
-        fmt='%.6f')
-    
-
-
-# choice1= 0 unpermuted. (Conditional permutation test)
-#
-
-# out of sample prediction accuracy
-
-# choice2 = f(choice1, happen1)
-
-
-#
+	shuffled_data = shuffle_happen(data)
+	estimate = estimate_effect(shuffled_data)
+	permutation_estimates = np.append(permutation_estimates, estimate)
+	print(f"Shuffled Effect {step+1}: {estimate}")
+	np.savetxt('permutation_estimates.csv', 
+		permutation_estimates, 
+		delimiter=',',
+		fmt='%.6f')
+	
 # Next steps:
 # A) Obtain p-value from permutation test
 # B) Distribution of effect estimates. Take the average 
