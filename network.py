@@ -12,32 +12,15 @@ torch.set_printoptions(sci_mode=False, edgeitems=5)
 # torch.cuda.manual_seed_all(0)
 
 df = pd.read_csv("cleanData.csv")
-# df = df[df['choice1']==1]
 force_category_columns = [
-    'cognition1',
-    'cognition2'
     'cognition1',
     'cognition2'
 ]
 for column_name, dtype in df.dtypes.items():
     if dtype != 'int64' or column_name in force_category_columns:
         df[column_name] = df[column_name].astype('category').cat.codes
-    if dtype != 'int64' or column_name in force_category_columns:
-        df[column_name] = df[column_name].astype('category').cat.codes
 
 drop_columns = [
-    'subject',
-    'choice2',
-    'happen2',
-    'possible2',
-    'experimentTime',
-    'timeTaken',
-    'engagement',
-    'clicks',
-    'completionCode',
-    'possible1',
-    'quizEndTime',
-    'surveyEndTime'
     'subject',
     'choice2',
     'happen2',
@@ -65,14 +48,6 @@ category_column_names = [
     'studentStatus',
     'cognition1',
     'cognition2'
-    'choice1',
-    'ethnicity',
-    'nation',
-    'sex',
-    'employment',
-    'studentStatus',
-    'cognition1',
-    'cognition2'
 ]
 category_df = input_df[category_column_names]
 category_ints = torch.tensor(category_df.to_numpy(),dtype=torch.long)
@@ -84,17 +59,11 @@ continuous_column_names = [
     'quizTime',
     'approvals',
     'age'
-    'surveyTime',
-    'quizTime',
-    'approvals',
-    'age'
 ]
 continuous_df = input_df[continuous_column_names]
 continuous_tensor = torch.tensor(continuous_df.to_numpy(),dtype=torch.float)
 continuous_columns = [continuous_tensor[:,j] for j in range(continuous_tensor.size()[1])]
 standardized_columns = [
-    torch.unsqueeze((c - torch.mean(c)) / torch.std(c),1)
-    for c in continuous_columns
     torch.unsqueeze((c - torch.mean(c)) / torch.std(c),1)
     for c in continuous_columns
 ]
@@ -175,22 +144,7 @@ def train_step(model, data, optimizer):
     loss.backward()
     optimizer.step()
     return loss.item()
-    model.train()
-    optimizer.zero_grad()
-    x, y = data
-    predictions = model(x)
-    loss = loss_function(predictions, y)
-    loss.backward()
-    optimizer.step()
-    return loss.item()
-
 def leave_one_out (data, observation):
-    x, y = data
-    test_x = x[observation].unsqueeze(0)
-    test_y = y[observation].unsqueeze(0)
-    train_x = torch.cat((x[:observation], x[observation+1:]), dim=0)
-    train_y = torch.cat((y[:observation], y[observation+1:]), dim=0)
-    return (train_x, train_y), (test_x, test_y)
     x, y = data
     test_x = x[observation].unsqueeze(0)
     test_y = y[observation].unsqueeze(0)
@@ -199,28 +153,6 @@ def leave_one_out (data, observation):
     return (train_x, train_y), (test_x, test_y)
 
 def cross_validate(data, ntrials=1000, nsteps=1000):
-    steps = [i for i in range(nsteps)]
-    nobs = data[0].size()[0]
-    test_losses = np.zeros((ntrials, nsteps))
-    plt.ion()
-    for trial in range(ntrials):
-        print(f"Trial {trial+1}/{ntrials}")
-        ob = np.random.randint(0, nobs)
-        train_data, test_data = leave_one_out(data, ob)
-        model = Multilayer_Perceptron().to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-        for step in range(nsteps):
-            train_step(model, train_data, optimizer)
-            test_loss = test_step(model, test_data)
-            test_losses[trial, step] = test_loss
-        mean_losses = np.mean(test_losses[:(trial+1), :], 0)
-        plt.clf()
-        plt.plot(steps, mean_losses, label='Test Loss')
-        plt.pause(0.1)
-    mean_losses = np.mean(test_losses, 0)
-    stop_step = np.argmin(mean_losses)
-    print(f"stop_step: {stop_step}")
-    return mean_losses
     steps = [i for i in range(nsteps)]
     nobs = data[0].size()[0]
     test_losses = np.zeros((ntrials, nsteps))
@@ -269,50 +201,8 @@ def predict(data, nsteps):
         predictions[ob, 0] = output0.item()
         predictions[ob, 1] = output1.item()
     return predictions
-    nobs = data[0].size()[0]
-    predictions = np.zeros((nobs, 2))
-    for ob in range(nobs):
-        print(f"Observation {ob+1}/{nobs}")
-        train_data, test_data = leave_one_out(data, ob)
-        model = Multilayer_Perceptron().to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-        for _ in range(nsteps):
-            train_step(model, train_data, optimizer)
-        input0 = test_data[0].clone()
-        input1 = test_data[0].clone()
-        input0[0,0] = 0
-        input1[0,0] = 1
-        model.eval()
-        with torch.no_grad():
-            output0 = model(input0)
-            output1 = model(input1)
-        predictions[ob, 0] = output0.item()
-        predictions[ob, 1] = output1.item()
-    return predictions
-
-predictions = predict(data, nsteps=345)
-predictedTE= predictions[:,1] - predictions[:,0]
-n = predictions.shape[0]
-predictedOutcomes = np.array([
-    predictions[i,happen1[i]]
-    for i in range(n)
-])
-np.mean(abs(choice2 - predictedOutcomes)) 
-# out of sample prediction .4 (= terrible  here)
 
 def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
-    inputs, targets = data
-    predictions = predict(data, nsteps=345) # 345
-    treatment = inputs[:,0].cpu().numpy()
-    T0 = (treatment == 0) & (choice1 == 1)
-    T1 = (treatment == 1) & (choice1 == 1)
-    C11 = T0 | T1
-    A0 = np.mean(choice2[T0]-predictions[T0,0]) # debiasing term
-    A1 = np.mean(choice2[T1]-predictions[T1,1]) # debiasing term
-    B0 = np.mean(predictions[C11,0]) 
-    B1 = np.mean(predictions[C11,1])
-    mu_hat = [A0 + B0, A1 + B1]
-    return mu_hat[1] - mu_hat[0]
     inputs, targets = data
     predictions = predict(data, nsteps=345) # 345
     treatment = inputs[:,0].cpu().numpy()
@@ -333,14 +223,7 @@ def shuffle_happen(data: torch.Tensor):
     shuffled_inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
     data = (shuffled_inputs, targets)
     return data
-    inputs, targets = data
-    shuffled_inputs = inputs.clone()
-    shuffled_happen1 = np.random.permutation(happen1)
-    shuffled_inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
-    data = (shuffled_inputs, targets)
-    return data
 
-shuffled_data = shuffle_happen(data)
 # C11 = choice1 == 1
 # C10 = choice1 == 0
 # data[0][:,0] - shuffled_data[0][:,0]
