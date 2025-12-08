@@ -77,6 +77,13 @@ choice1 = df['choice1'].to_numpy()
 choice2 = df['choice2'].to_numpy()
 happen1 = df['happen1'].to_numpy()
 
+inputs0 = inputs[choice1==0,:]
+inputs1 = inputs[choice1==1,:]
+targets0 = targets[choice1==0]
+targets1 = targets[choice1==1]
+data0 = (inputs0, targets0)
+data1 = (inputs1, targets1)
+
 n1 = 5 # number of neurons in first hidden layer
 n2 = 5 # number of neurons in second hidden layer
 
@@ -219,8 +226,9 @@ def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
 def shuffle_happen(data: torch.Tensor):
     inputs, targets = data
     shuffled_inputs = inputs.clone()
-    shuffled_happen1 = np.random.permutation(happen1)
-    shuffled_inputs[:,0] = torch.tensor(shuffled_happen1,dtype=torch.long)
+    treatment = inputs[:,0]
+    shuffled_treatment = np.random.permutation(treatment.cpu())
+    shuffled_inputs[:,0] = torch.tensor(shuffled_treatment,dtype=torch.long).to(device)
     data = (shuffled_inputs, targets)
     return data
 
@@ -251,11 +259,13 @@ def shuffle_happen(data: torch.Tensor):
 effect_estimate = estimate_effect(data)
 print(f"Predicted Effect: {effect_estimate}")
 permutation_estimates = np.array([effect_estimate])
-for step in range(10000):
+for step in range(300):
     shuffled_data1 = shuffle_happen(data1)
-    shuffled_input1
-    shuffled_inputs = input0,shuffled_data1[0]
-    shuffled
+    shuffled_inputs1 = shuffled_data1[0]
+    shuffled_inputs = torch.cat((inputs0,shuffled_inputs1),0)
+    shuffled_targets1 = shuffled_data1[1]
+    shuffled_targets = torch.cat((targets0,shuffled_targets1),0)
+    shuffled_data = (shuffled_inputs, shuffled_targets)
     estimate = estimate_effect(shuffled_data)
     permutation_estimates = np.append(permutation_estimates, estimate)
     print(f"Shuffled Effect {step+1}: {estimate}")
