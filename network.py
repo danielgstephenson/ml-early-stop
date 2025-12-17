@@ -105,23 +105,6 @@ class Multilayer_Perceptron(torch.nn.Module):
         output = x.squeeze(1) if x.dim() > 1 else x
         return output
     
-    def __init__(self):
-        super(Multilayer_Perceptron,self).__init__()
-        self.input_layer = torch.nn.Linear(inputs.size()[1],n1)
-        self.elu = torch.nn.ELU()
-        self.sigma = torch.nn.Sigmoid()
-        self.hidden1 = torch.nn.Linear(n1,n2)
-        self.hidden2 = torch.nn.Linear(n2,1)
-    def forward(self,x):
-        x = self.input_layer(x)        
-        x = self.elu(x)
-        x = self.hidden1(x)
-        x = self.elu(x)
-        x = self.hidden2(x)
-        x = self.sigma(x)
-        output = x.squeeze(1) if x.dim() > 1 else x
-        return output
-    
 loss_function = torch.nn.MSELoss()
 
 def test_step(model, data):
@@ -223,14 +206,13 @@ def estimate_effect(data: tuple[torch.Tensor,torch.Tensor]):
     mu_hat = [A0 + B0, A1 + B1]
     return mu_hat[1] - mu_hat[0]
 
-def shuffle_happen(data: torch.Tensor):
+def shuffle_happen(data: tuple[torch.Tensor,torch.Tensor]):
     inputs, targets = data
     shuffled_inputs = inputs.clone()
     treatment = inputs[:,0]
     shuffled_treatment = np.random.permutation(treatment.cpu())
     shuffled_inputs[:,0] = torch.tensor(shuffled_treatment,dtype=torch.long).to(device)
-    data = (shuffled_inputs, targets)
-    return data
+    return (shuffled_inputs, targets)
 
 # C11 = choice1 == 1
 # C10 = choice1 == 0
@@ -259,7 +241,7 @@ def shuffle_happen(data: torch.Tensor):
 effect_estimate = estimate_effect(data)
 print(f"Predicted Effect: {effect_estimate}")
 permutation_estimates = np.array([effect_estimate])
-for step in range(300):
+for step in range(500):
     shuffled_data1 = shuffle_happen(data1)
     shuffled_inputs1 = shuffled_data1[0]
     shuffled_inputs = torch.cat((inputs0,shuffled_inputs1),0)
